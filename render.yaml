@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: stock-picker-backend
+    env: python
+    region: oregon
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --timeout 120 --workers 2 --threads 4
+    healthCheckPath: /pick
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
