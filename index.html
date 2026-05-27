@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能选股平台</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <h1>📈 智能选股平台</h1>
+        <p>基于多种策略的量化选股工具</p>
+    </header>
+    
+    <nav>
+        <button class="strategy-btn active" data-strategy="strategy1">策略一：均线突破</button>
+        <button class="strategy-btn" data-strategy="strategy2">策略二：量能异动</button>
+        <button class="strategy-btn" data-strategy="strategy3">策略三：价值投资</button>
+    </nav>
+    
+    <main>
+        <div id="loading">加载中...</div>
+        <div id="results" style="display: none;">
+            <div id="summary"></div>
+            <table id="stock-table">
+                <thead>
+                    <tr>
+                        <th>代码</th>
+                        <th>名称</th>
+                        <th>行业</th>
+                        <th>得分</th>
+                        <th>最新价</th>
+                        <th>标签</th>
+                    </tr>
+                </thead>
+                <tbody id="stock-body"></tbody>
+            </table>
+        </div>
+    </main>
+    
+    <footer>
+        <p>更新时间：<span id="update-time"></span></p>
+    </footer>
+    
+    <script src="script.js"></script>
+</body>
+</html>
