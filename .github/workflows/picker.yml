@@ -23,13 +23,14 @@ jobs:
       - name: Run strategy 1
         env:
           TUSHARE_TOKEN: ${{ secrets.TUSHARE_TOKEN }}
-        run: python -c "
-from stock_picker_tushare import run_picker
-import json
-result = run_picker(max_results=10)
-with open('data/strategy1.json', 'w', encoding='utf-8') as f:
-    json.dump(result, f, ensure_ascii=False, indent=2)
-"
+        run: |
+          python -c "
+          from stock_picker_tushare import run_picker
+          import json
+          result = run_picker(max_results=10)
+          with open('data/strategy1.json', 'w', encoding='utf-8') as f:
+              json.dump(result, f, ensure_ascii=False, indent=2)
+          "
 
       - name: Commit results
         run: |
