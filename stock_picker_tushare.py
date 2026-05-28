@@ -13,12 +13,9 @@ import numpy as np
 from datetime import datetime, timedelta
 import time
 import sys
+import json
 import warnings
 warnings.filterwarnings('ignore')
-
-# 添加超时设置
-import socket
-socket.setdefaulttimeout(10)
 
 DAILY_MA_SHORT = 60
 DAILY_MA_LONG = 156
@@ -59,10 +56,9 @@ def get_stock_list():
     for _, row in df.iterrows():
         code = row['ts_code']
         name = row['name']
-        # 只保留沪深A股
-        if not (code.startswith('6') or code.startswith('0') or code.startswith('3')):
+        # 只保留 00、30、60 开头
+        if not (code.startswith('60') or code.startswith('00') or code.startswith('30')):
             continue
-        # 排除ST和退市股票
         if 'ST' in name or 'st' in name or '退' in name:
             continue
         stocks.append({'code': code, 'name': name})
@@ -71,17 +67,13 @@ def get_stock_list():
 
 def get_industry(code):
     try:
-        # 从 stock_basic 获取行业信息
         df = pro.stock_basic(ts_code=code, fields='ts_code,industry')
         if df is not None and len(df) > 0:
             industry = df.iloc[0].get('industry', '')
             return industry, ''
     except Exception as e:
-        print(f"获取行业信息失败 {code}: {e}")
-    
-    # 如果获取失败，返回空值
+        pass
     return '', ''
-    
 
 def is_hot_industry(industry, industry_detail, name=''):
     check_str = (industry + industry_detail + name).upper()
@@ -96,9 +88,8 @@ def process_stock(code, name):
     
     try:
         df = pro.daily(ts_code=code, start_date=start_date, end_date=end_date, adj='qfq')
-        time.sleep(0.3)  # Tushare API频率限制
+        time.sleep(0.3)
     except Exception as e:
-        print(f"获取日线数据失败 {code}: {e}")
         return None
     
     if df is None or len(df) < DAILY_MA_DEVIL + 20:
@@ -156,13 +147,11 @@ def process_stock(code, name):
     if not cross_found:
         return None
     
-    # 获取周线数据
     start_date_w = (datetime.now() - timedelta(days=1200)).strftime('%Y%m%d')
     try:
         df_weekly = pro.weekly(ts_code=code, start_date=start_date_w, end_date=end_date, adj='qfq')
         time.sleep(0.3)
-    except Exception as e:
-        print(f"获取周线数据失败 {code}: {e}")
+    except:
         return None
     
     if df_weekly is None or len(df_weekly) < WEEKLY_MA + 5:
@@ -229,24 +218,24 @@ def process_stock(code, name):
     
     if above_321:
         score += 2
-        tags.append("321日线上✓")
+        tags.append("321日线上")
     else:
         score += 0.5
-        tags.append("321日线附近⚠")
+        tags.append("321日线附近")
     
     if vol_ok:
         score += 2
-        tags.append("量能确认✓")
+        tags.append("量能确认")
     else:
         tags.append("量能未确认")
     
     if lizhuangliang:
         score += 3
-        tags.append("🔥立桩量")
+        tags.append("立桩量")
     
     if luoxuanjiang:
         score += 2
-        tags.append("🌀螺旋桨")
+        tags.append("螺旋桨")
     
     if abs(deviation_pct) <= 1:
         score += 1
@@ -273,17 +262,15 @@ def process_stock(code, name):
 def get_fundamentals(code):
     result = {'roe': None, 'netProfit': None, 'gpMargin': None}
     try:
-        # 尝试获取财务指标
         df = pro.fina_indicator(ts_code=code, start_date='20250101')
         time.sleep(0.3)
         if df is not None and len(df) > 0:
             row = df.iloc[0]
             result['roe'] = row.get('roe')
             result['gpMargin'] = row.get('grossprofit_margin')
-    except Exception as e:
-        print(f"获取财务指标失败 {code}: {e}")
+    except:
+        pass
     
-    # 如果没有获取到ROE，尝试从利润表获取
     if result['roe'] is None:
         try:
             df = pro.income(ts_code=code, start_date='20250101', fields='ts_code,total_revenue,gross_profit,net_profit')
@@ -296,114 +283,16 @@ def get_fundamentals(code):
                 if total_revenue and total_revenue > 0:
                     result['gpMargin'] = gross_profit / total_revenue
                 result['netProfit'] = net_profit
-        except Exception as e:
-            print(f"获取利润表失败 {code}: {e}")
+        except:
+            pass
     
     return result
 
-def main():
-    if not init_tushare():
-        print("Tushare初始化失败")
-        return
-    
-    stock_list = get_stock_list()
-    total = len(stock_list)
-    print(f"共 {total} 只 | 策略v6：321日线±5%过滤 + 135日均量线评分 + 立桩量/螺旋桨加分")
-    print("=" * 90)
-    
-    results = []
-    checked = 0
-    
-    for i, stock in enumerate(stock_list):
-        checked += 1
-        code = stock['code']
-        name = stock['name']
-        
-        try:
-            tech = process_stock(code, name)
-            if tech is None:
-                continue
-            
-            industry, industry_detail = get_industry(code)
-            is_hot, matched = is_hot_industry(industry, industry_detail, name)
-            if not is_hot:
-                continue
-            
-            fund = get_fundamentals(code)
-            net_profit = fund.get('netProfit')
-            roe = fund.get('roe')
-            
-            if net_profit and net_profit < 0:
-                continue
-            if roe is not None and roe < 0:
-                continue
-            
-            if roe and roe * 100 > 10:
-                tech['score'] += 1
-            elif roe and roe * 100 > 5:
-                tech['score'] += 0.5
-            if fund.get('gpMargin') and fund['gpMargin'] * 100 > 30:
-                tech['score'] += 0.5
-            
-            result = {
-                '代码': code, '名称': name, '行业': industry,
-                '景气标签': matched, '得分': tech['score'],
-                '最新价': tech['current_price'],
-                'MA321': tech['daily_ma321'],
-                '高于321线%': tech['price_vs_321'],
-                '死叉天数': tech['days_ago'],
-                '偏离60周线%': tech['deviation_pct'],
-                '量能确认': '✓' if tech['vol_ok'] else '⚠',
-                '立桩量': '🔥' if tech['lizhuangliang'] else '-',
-                '螺旋桨': '🌀' if tech['luoxuanjiang'] else '-',
-                'ROE%': round(roe * 100, 2) if roe else None,
-                '毛利率%': round(fund.get('gpMargin', 0) * 100, 2) if fund.get('gpMargin') else None,
-                '净利润亿': round(net_profit / 1e8, 2) if net_profit else None,
-                '标签': tech['tags'],
-            }
-            results.append(result)
-            
-            m = ''
-            if tech['lizhuangliang']: m += '🔥'
-            if tech['luoxuanjiang']: m += '🌀'
-            if tech['vol_ok']: m += '✓'
-            print(f"  ✓ [{len(results)}] {code} {name} | {matched} | {tech['score']:.1f}分 | 死叉{tech['days_ago']}天 | 321线{tech['price_vs_321']}% | {m}")
-            sys.stdout.flush()
-            
-            if len(results) >= 20:
-                break
-            time.sleep(0.2)
-        except Exception as e:
-            print(f"处理 {code} 失败: {e}")
-            pass
-        
-        if checked % 300 == 0:
-            print(f"进度: {checked}/{total} ({checked/total*100:.1f}%) | 找到: {len(results)}")
-            sys.stdout.flush()
-        time.sleep(0.05)
-    
-    print(f"\n完成！检查{checked}只，找到{len(results)}只")
-    
-    if results:
-        df = pd.DataFrame(results)
-        df = df.sort_values('得分', ascending=False)
-        
-        print("\n" + "=" * 100)
-        print(df[['代码','名称','景气标签','得分','量能确认','立桩量','螺旋桨','高于321线%','偏离60周线%','ROE%']].to_string(index=False))
-        
-        top5 = df.head(5)
-        print("\n🏆 今日推荐5只（升级版策略）：\n")
-        for i, (_, row) in enumerate(top5.iterrows(), 1):
-            print(f"📌 第{i}只：{row['代码']} {row['名称']}")
-            print(f"   赛道: {row['景气标签']} | 得分: {row['得分']:.1f}")
-            print(f"   死叉: {row['死叉天数']}天 | 偏离60周线: {row['偏离60周线%']}% | 高于321线: {row['高于321线%']}%")
-            print(f"   量能: {row['量能确认']} | 立桩量: {row['立桩量']} | 螺旋桨: {row['螺旋桨']}")
-            print(f"   ROE: {row['ROE%']}% | 毛利: {row['毛利率%']}% | 净利: {row['净利润亿']}亿")
-            print(f"   标签: {row['标签']}")
-            print()
-        
-        top5.to_csv('stock_v6_top5.csv', index=False, encoding='utf-8-sig')
-        df.to_csv('stock_v6_all.csv', index=False, encoding='utf-8-sig')
+def save_results(result, filename='data/strategy1.json'):
+    os.makedirs(os.path.dirname(filename) if os.path.dirname(filename) else '.', exist_ok=True)
+    with open(filename, 'w', encoding='utf-8') as f:
+        json.dump(result, f, ensure_ascii=False, indent=2)
+    print(f'结果已保存到 {filename}')
 
 def run_picker(max_results=5, progress_callback=None):
     result = {
@@ -510,7 +399,6 @@ def run_picker(max_results=5, progress_callback=None):
                     break
                 time.sleep(0.5)
             except Exception as e:
-                print(f"处理 {code} 失败: {e}")
                 pass
             
             time.sleep(0.05)
@@ -539,5 +427,7 @@ def run_picker(max_results=5, progress_callback=None):
     return result
 
 if __name__ == '__main__':
-    main()
-
+    init_tushare()
+    result = run_picker(max_results=10)
+    save_results(result, 'data/strategy1.json')
+    print(result['message'])
