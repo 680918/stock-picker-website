@@ -8,6 +8,7 @@ on:
 jobs:
   run-picker:
     runs-on: ubuntu-latest
+    timeout-minutes: 120
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -25,11 +26,10 @@ jobs:
           TUSHARE_TOKEN: ${{ secrets.TUSHARE_TOKEN }}
         run: |
           python -c "
-          from stock_picker_tushare import run_picker
-          import json
+          from stock_picker_tushare import run_picker, save_results
           result = run_picker(max_results=10)
-          with open('data/strategy1.json', 'w', encoding='utf-8') as f:
-              json.dump(result, f, ensure_ascii=False, indent=2)
+          save_results(result, 'data/strategy1.json')
+          print('选股完成')
           "
 
       - name: Commit results
@@ -37,5 +37,5 @@ jobs:
           git config user.email "action@github.com"
           git config user.name "GitHub Action"
           git add data/
-          git commit -m "Update stock data"
+          git diff --staged --quiet || git commit -m "Update stock data $(date -u)"
           git push
