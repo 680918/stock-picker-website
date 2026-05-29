@@ -1,153 +1,566 @@
-name: Stock Picker Automation
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>智能选股器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-on:
-  schedule:
-    - cron: '0 2 * * *'  # 每天凌晨2点运行
-  workflow_dispatch:     # 允许手动触发
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
 
-jobs:
-  run-picker:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
 
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install tushare pandas numpy
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 8px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
 
-      - name: Run strategy 1 - 均线突破策略
-        env:
-          TUSHARE_TOKEN: ${{ secrets.TUSHARE_TOKEN }}
-        run: python -c "
-import sys
-sys.path.insert(0, '.')
-from stock_picker_tushare import run_picker
-import json
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
 
-result = run_picker(max_results=10)
-with open('data/strategy1.json', 'w', encoding='utf-8') as f:
-    json.dump(result, f, ensure_ascii=False, indent=2)
-print('策略一完成')
-"
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+        }
 
-      - name: Run strategy 2 - 量能异动
-        env:
-          TUSHARE_TOKEN: ${{ secrets.TUSHARE_TOKEN }}
-        run: python -c "
-import tushare as ts
-import pandas as pd
-import json
-from datetime import datetime
+        .btn-primary {
+            width: 100%;
+            padding: 16px;
+            font-size: 18px;
+            font-weight: 600;
+            color: white;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
 
-ts.set_token('${{ secrets.TUSHARE_TOKEN }}')
-pro = ts.pro_api()
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
 
-df = pro.stock_basic(exchange='', list_status='L', fields='ts_code,symbol,name,industry')
-stocks = []
-for _, row in df.iterrows():
-    if row['ts_code'].startswith(('6', '0', '3')) and 'ST' not in row['name']:
-        stocks.append({'code': row['ts_code'], 'name': row['name'], 'industry': row.get('industry', '')})
+        .btn-primary:active {
+            transform: translateY(0);
+        }
 
-results = []
-for stock in stocks[:50]:
-    try:
-        df = pro.daily(ts_code=stock['code'], start_date='20240101', end_date=datetime.now().strftime('%Y%m%d'), adj='qfq')
-        if len(df) > 20:
-            volumes = df['vol'].values
-            vol_ma20 = pd.Series(volumes).rolling(20).mean().values
-            if len(vol_ma20) > 0 and volumes[-1] > vol_ma20[-1] * 1.5:
-                results.append({
-                    '代码': stock['code'],
-                    '名称': stock['name'],
-                    '行业': stock['industry'],
-                    '得分': round(6 + (volumes[-1]/vol_ma20[-1]-1.5)*2, 1),
-                    '最新价': round(df['close'].values[-1], 2),
-                    '标签': '量能异动|放量上涨'
+        .btn-primary:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .progress-section {
+            display: none;
+            margin-top: 20px;
+        }
+
+        .progress-section.active {
+            display: block;
+        }
+
+        .progress-text {
+            text-align: center;
+            color: #666;
+            margin-bottom: 12px;
+            font-size: 14px;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+
+        .stock-list {
+            display: none;
+            margin-top: 20px;
+        }
+
+        .stock-list.active {
+            display: block;
+        }
+
+        .stock-item {
+            background: linear-gradient(135deg, #f8f9ff 0%, #f0f2ff 100%);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            border-left: 4px solid #667eea;
+        }
+
+        .stock-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .stock-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .stock-name {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .stock-code {
+            font-size: 14px;
+            color: #888;
+        }
+
+        .stock-score {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .stock-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .tag {
+            background: #e8eaff;
+            color: #667eea;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+        }
+
+        .tag.hot {
+            background: #ffe8e8;
+            color: #e85555;
+        }
+
+        .history-section {
+            margin-top: 20px;
+        }
+
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .history-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .btn-clear {
+            padding: 8px 16px;
+            font-size: 14px;
+            color: #e85555;
+            background: #ffe8e8;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-clear:hover {
+            background: #ffd0d0;
+        }
+
+        .history-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .history-item {
+            background: #f8f9ff;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+
+        .history-time {
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 12px;
+        }
+
+        .history-stocks {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .history-stock {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            background: white;
+            border-radius: 8px;
+        }
+
+        .history-stock-name {
+            font-size: 14px;
+            color: #333;
+        }
+
+        .history-stock-info {
+            text-align: right;
+        }
+
+        .history-stock-code {
+            font-size: 12px;
+            color: #888;
+        }
+
+        .history-stock-score {
+            font-size: 14px;
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #888;
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+        }
+
+        .error-msg {
+            background: #ffe8e8;
+            color: #e85555;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-top: 16px;
+            display: none;
+        }
+
+        .error-msg.active {
+            display: block;
+        }
+
+        .disclaimer {
+            text-align: center;
+            font-size: 12px;
+            color: #888;
+            margin-top: 20px;
+            padding: 0 20px;
+            line-height: 1.6;
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 12px;
+            }
+
+            .card {
+                padding: 16px;
+            }
+
+            .header h1 {
+                font-size: 24px;
+            }
+
+            .stock-item {
+                padding: 12px;
+            }
+
+            .stock-name {
+                font-size: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📈 智能选股器</h1>
+            <p>基于技术面 + 基本面的智能筛选</p>
+        </div>
+
+        <div class="card">
+            <button class="btn-primary" id="startBtn" onclick="startPicking()">
+                🚀 开始选股
+            </button>
+
+            <div class="error-msg" id="errorMsg"></div>
+
+            <div class="progress-section" id="progressSection">
+                <div class="progress-text" id="progressText">正在连接服务器...</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+            </div>
+
+            <div class="stock-list" id="stockList"></div>
+        </div>
+
+        <div class="card history-section">
+            <div class="history-header">
+                <div class="history-title">📋 历史记录</div>
+                <button class="btn-clear" onclick="clearHistory()">清空记录</button>
+            </div>
+            <div class="history-list" id="historyList">
+                <div class="empty-state" id="emptyHistory">
+                    <div class="empty-state-icon">📭</div>
+                    <div>暂无选股记录</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <hr style="margin: 20px 0; border: none; border-top: 1px solid #e0e0e0;">
+
+    <div class="disclaimer">
+        免责声明：本选股器仅为技术指标与基本面数据筛选结果，不构成任何投资建议。股市有风险，投资需谨慎。过往业绩不代表未来表现。请独立判断或咨询专业顾问。
+    </div>
+
+    <script>
+        // 生产环境配置：部署后替换为你的 Render 后端地址
+        const API_BASE = 'https://kent3.pythonanywhere.com';
+        
+        let pollInterval = null;
+
+        function startPicking() {
+            const btn = document.getElementById('startBtn');
+            const progressSection = document.getElementById('progressSection');
+            const stockList = document.getElementById('stockList');
+            const errorMsg = document.getElementById('errorMsg');
+
+            btn.disabled = true;
+            btn.textContent = '⏳ 选股中...';
+            progressSection.classList.add('active');
+            stockList.classList.remove('active');
+            errorMsg.classList.remove('active');
+            stockList.innerHTML = '';
+            document.getElementById('progressFill').style.width = '0%';
+            document.getElementById('progressText').textContent = '正在连接服务器...';
+
+            fetch(`${API_BASE}/pick`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success && data.task_id) {
+                        pollProgress(data.task_id);
+                    } else {
+                        showError('任务启动失败');
+                        resetButton();
+                    }
                 })
-    except:
-        pass
+                .catch(err => {
+                    showError('无法连接到服务器，请确保后端服务已启动');
+                    resetButton();
+                });
+        }
 
-result = {
-    'success': True,
-    'message': f'策略二：量能异动 - 共检查{len(stocks)}只股票，找到{len(results)}只符合条件',
-    'stocks': results[:10],
-    'update_time': datetime.now().isoformat()
-}
+        function pollProgress(taskId) {
+            let progress = 0;
+            const progressFill = document.getElementById('progressFill');
+            const progressText = document.getElementById('progressText');
 
-with open('data/strategy2.json', 'w', encoding='utf-8') as f:
-    json.dump(result, f, ensure_ascii=False, indent=2)
-print('策略二完成')
-"
+            pollInterval = setInterval(() => {
+                fetch(`${API_BASE}/progress/${taskId}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        if (!data.success) {
+                            showError('查询进度失败');
+                            clearInterval(pollInterval);
+                            resetButton();
+                            return;
+                        }
 
-      - name: Run strategy 3 - 价值投资
-        env:
-          TUSHARE_TOKEN: ${{ secrets.TUSHARE_TOKEN }}
-        run: python -c "
-import tushare as ts
-import json
-from datetime import datetime
+                        const task = data.task;
+                        const prog = task.progress;
 
-ts.set_token('${{ secrets.TUSHARE_TOKEN }}')
-pro = ts.pro_api()
+                        if (prog.status === 'processing' || prog.status === 'loading') {
+                            progress = Math.min(progress + Math.random() * 15, 95);
+                            progressFill.style.width = `${progress}%`;
+                            progressText.textContent = prog.message || '正在分析股票...';
+                        } else if (prog.status === 'completed') {
+                            progressFill.style.width = '100%';
+                            progressText.textContent = '选股完成！';
+                            clearInterval(pollInterval);
 
-df = pro.stock_basic(exchange='', list_status='L', fields='ts_code,symbol,name,industry')
-stocks = []
-for _, row in df.iterrows():
-    if row['ts_code'].startswith(('6', '0', '3')) and 'ST' not in row['name']:
-        stocks.append({'code': row['ts_code'], 'name': row['name'], 'industry': row.get('industry', '')})
+                            setTimeout(() => {
+                                displayResults(prog.result);
+                                saveToHistory(prog.result);
+                                resetButton();
+                            }, 500);
+                        } else if (prog.status === 'error') {
+                            showError(prog.message || '选股过程中出错');
+                            clearInterval(pollInterval);
+                            resetButton();
+                        }
+                    })
+                    .catch(err => {
+                        showError('查询进度失败');
+                        clearInterval(pollInterval);
+                        resetButton();
+                    });
+            }, 1500);
+        }
 
-results = []
-for stock in stocks[:50]:
-    try:
-        fina = pro.fina_indicator(ts_code=stock['code'], start_date='20250101')
-        if len(fina) > 0:
-            roe = fina.iloc[0].get('roe', 0)
-            pe = fina.iloc[0].get('pe', 100)
-            if roe > 8 and pe < 35:
-                df = pro.daily(ts_code=stock['code'], start_date='20240101', end_date=datetime.now().strftime('%Y%m%d'), adj='qfq')
-                price = df['close'].values[-1] if len(df) > 0 else 10
-                score = 7 + (roe - 8) / 10 * 3
-                results.append({
-                    '代码': stock['code'],
-                    '名称': stock['name'],
-                    '行业': stock['industry'],
-                    '得分': round(score, 1),
-                    '最新价': round(price, 2),
-                    '标签': '价值投资|高ROE|低估值'
-                })
-    except:
-        pass
+        function displayResults(result) {
+            const stockList = document.getElementById('stockList');
+            const progressSection = document.getElementById('progressSection');
 
-result = {
-    'success': True,
-    'message': f'策略三：价值投资 - 共检查{len(stocks)}只股票，找到{len(results)}只符合条件',
-    'stocks': results[:10],
-    'update_time': datetime.now().isoformat()
-}
+            progressSection.classList.remove('active');
+            stockList.classList.add('active');
 
-with open('data/strategy3.json', 'w', encoding='utf-8') as f:
-    json.dump(result, f, ensure_ascii=False, indent=2)
-print('策略三完成')
-"
+            if (!result || !result.stocks || result.stocks.length === 0) {
+                stockList.innerHTML = '<div class="empty-state"><div class="empty-state-icon">😢</div><div>未找到符合条件的股票</div></div>';
+                return;
+            }
 
-      - name: Run hot sectors - 热点板块
-        env:
-          TUSHARE_TOKEN: ${{ secrets.TUSHARE_TOKEN }}
-        run: |
-          python hot_sectors.py
-          echo "热点板块生成完成"
+            let html = '';
+            result.stocks.forEach((stock, index) => {
+                const isHot = stock['立桩量'] || stock['螺旋桨'];
+                html += `
+                    <div class="stock-item">
+                        <div class="stock-header">
+                            <div>
+                                <div class="stock-name">${stock['名称']}</div>
+                                <div class="stock-code">${stock['代码']}</div>
+                            </div>
+                            <div class="stock-score">${stock['得分']} 分</div>
+                        </div>
+                        <div class="stock-tags">
+                            <span class="tag ${isHot ? 'hot' : ''}">${stock['景气标签']}</span>
+                            ${stock['行业'] ? `<span class="tag">${stock['行业']}</span>` : ''}
+                            ${stock['立桩量'] ? '<span class="tag hot">🔥立桩量</span>' : ''}
+                            ${stock['螺旋桨'] ? '<span class="tag hot">🌀螺旋桨</span>' : ''}
+                        </div>
+                    </div>
+                `;
+            });
 
-      - name: Commit and push results
-        run: |
-          git config --global user.email "action@github.com"
-          git config --global user.name "GitHub Action"
-          git add data/
-          git commit -m "Update stock data $(date -u)"
-          git push
+            stockList.innerHTML = html;
+        }
+
+        function saveToHistory(result) {
+            if (!result || !result.stocks || result.stocks.length === 0) return;
+
+            const history = JSON.parse(localStorage.getItem('stockPickerHistory') || '[]');
+            const record = {
+                time: new Date().toLocaleString('zh-CN'),
+                stocks: result.stocks.slice(0, 5)
+            };
+
+            history.unshift(record);
+            if (history.length > 20) history.pop();
+
+            localStorage.setItem('stockPickerHistory', JSON.stringify(history));
+            renderHistory();
+        }
+
+        function renderHistory() {
+            const history = JSON.parse(localStorage.getItem('stockPickerHistory') || '[]');
+            const historyList = document.getElementById('historyList');
+            const emptyHistory = document.getElementById('emptyHistory');
+
+            if (history.length === 0) {
+                emptyHistory.style.display = 'block';
+                historyList.innerHTML = '';
+                historyList.appendChild(emptyHistory);
+                return;
+            }
+
+            emptyHistory.style.display = 'none';
+
+            let html = '';
+            history.forEach((record, index) => {
+                let stocksHtml = '';
+                record.stocks.forEach(stock => {
+                    stocksHtml += `
+                        <div class="history-stock">
+                            <div class="history-stock-name">${stock['名称']}</div>
+                            <div class="history-stock-info">
+                                <div class="history-stock-code">${stock['代码']}</div>
+                                <div class="history-stock-score">${stock['得分']}分</div>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                html += `
+                    <div class="history-item">
+                        <div class="history-time">🕐 ${record.time}</div>
+                        <div class="history-stocks">${stocksHtml}</div>
+                    </div>
+                `;
+            });
+
+            historyList.innerHTML = html;
+        }
+
+        function clearHistory() {
+            if (confirm('确定要清空所有历史记录吗？')) {
+                localStorage.removeItem('stockPickerHistory');
+                renderHistory();
+            }
+        }
+
+        function showError(message) {
+            const errorMsg = document.getElementById('errorMsg');
+            errorMsg.textContent = message;
+            errorMsg.classList.add('active');
+
+            const progressSection = document.getElementById('progressSection');
+            progressSection.classList.remove('active');
+        }
+
+        function resetButton() {
+            const btn = document.getElementById('startBtn');
+            btn.disabled = false;
+            btn.textContent = '🚀 开始选股';
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            renderHistory();
+        });
+    </script>
+</body>
+</html>
