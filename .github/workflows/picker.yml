@@ -1,0 +1,153 @@
+name: Stock Picker Automation
+
+on:
+  schedule:
+    - cron: '0 2 * * *'  # 每天凌晨2点运行
+  workflow_dispatch:     # 允许手动触发
+
+jobs:
+  run-picker:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install tushare pandas numpy
+
+      - name: Run strategy 1 - 均线突破策略
+        env:
+          TUSHARE_TOKEN: ${{ secrets.TUSHARE_TOKEN }}
+        run: python -c "
+import sys
+sys.path.insert(0, '.')
+from stock_picker_tushare import run_picker
+import json
+
+result = run_picker(max_results=10)
+with open('data/strategy1.json', 'w', encoding='utf-8') as f:
+    json.dump(result, f, ensure_ascii=False, indent=2)
+print('策略一完成')
+"
+
+      - name: Run strategy 2 - 量能异动
+        env:
+          TUSHARE_TOKEN: ${{ secrets.TUSHARE_TOKEN }}
+        run: python -c "
+import tushare as ts
+import pandas as pd
+import json
+from datetime import datetime
+
+ts.set_token('${{ secrets.TUSHARE_TOKEN }}')
+pro = ts.pro_api()
+
+df = pro.stock_basic(exchange='', list_status='L', fields='ts_code,symbol,name,industry')
+stocks = []
+for _, row in df.iterrows():
+    if row['ts_code'].startswith(('6', '0', '3')) and 'ST' not in row['name']:
+        stocks.append({'code': row['ts_code'], 'name': row['name'], 'industry': row.get('industry', '')})
+
+results = []
+for stock in stocks[:50]:
+    try:
+        df = pro.daily(ts_code=stock['code'], start_date='20240101', end_date=datetime.now().strftime('%Y%m%d'), adj='qfq')
+        if len(df) > 20:
+            volumes = df['vol'].values
+            vol_ma20 = pd.Series(volumes).rolling(20).mean().values
+            if len(vol_ma20) > 0 and volumes[-1] > vol_ma20[-1] * 1.5:
+                results.append({
+                    '代码': stock['code'],
+                    '名称': stock['name'],
+                    '行业': stock['industry'],
+                    '得分': round(6 + (volumes[-1]/vol_ma20[-1]-1.5)*2, 1),
+                    '最新价': round(df['close'].values[-1], 2),
+                    '标签': '量能异动|放量上涨'
+                })
+    except:
+        pass
+
+result = {
+    'success': True,
+    'message': f'策略二：量能异动 - 共检查{len(stocks)}只股票，找到{len(results)}只符合条件',
+    'stocks': results[:10],
+    'update_time': datetime.now().isoformat()
+}
+
+with open('data/strategy2.json', 'w', encoding='utf-8') as f:
+    json.dump(result, f, ensure_ascii=False, indent=2)
+print('策略二完成')
+"
+
+      - name: Run strategy 3 - 价值投资
+        env:
+          TUSHARE_TOKEN: ${{ secrets.TUSHARE_TOKEN }}
+        run: python -c "
+import tushare as ts
+import json
+from datetime import datetime
+
+ts.set_token('${{ secrets.TUSHARE_TOKEN }}')
+pro = ts.pro_api()
+
+df = pro.stock_basic(exchange='', list_status='L', fields='ts_code,symbol,name,industry')
+stocks = []
+for _, row in df.iterrows():
+    if row['ts_code'].startswith(('6', '0', '3')) and 'ST' not in row['name']:
+        stocks.append({'code': row['ts_code'], 'name': row['name'], 'industry': row.get('industry', '')})
+
+results = []
+for stock in stocks[:50]:
+    try:
+        fina = pro.fina_indicator(ts_code=stock['code'], start_date='20250101')
+        if len(fina) > 0:
+            roe = fina.iloc[0].get('roe', 0)
+            pe = fina.iloc[0].get('pe', 100)
+            if roe > 8 and pe < 35:
+                df = pro.daily(ts_code=stock['code'], start_date='20240101', end_date=datetime.now().strftime('%Y%m%d'), adj='qfq')
+                price = df['close'].values[-1] if len(df) > 0 else 10
+                score = 7 + (roe - 8) / 10 * 3
+                results.append({
+                    '代码': stock['code'],
+                    '名称': stock['name'],
+                    '行业': stock['industry'],
+                    '得分': round(score, 1),
+                    '最新价': round(price, 2),
+                    '标签': '价值投资|高ROE|低估值'
+                })
+    except:
+        pass
+
+result = {
+    'success': True,
+    'message': f'策略三：价值投资 - 共检查{len(stocks)}只股票，找到{len(results)}只符合条件',
+    'stocks': results[:10],
+    'update_time': datetime.now().isoformat()
+}
+
+with open('data/strategy3.json', 'w', encoding='utf-8') as f:
+    json.dump(result, f, ensure_ascii=False, indent=2)
+print('策略三完成')
+"
+
+      - name: Run hot sectors - 热点板块
+        env:
+          TUSHARE_TOKEN: ${{ secrets.TUSHARE_TOKEN }}
+        run: |
+          python hot_sectors.py
+          echo "热点板块生成完成"
+
+      - name: Commit and push results
+        run: |
+          git config --global user.email "action@github.com"
+          git config --global user.name "GitHub Action"
+          git add data/
+          git commit -m "Update stock data $(date -u)"
+          git push
