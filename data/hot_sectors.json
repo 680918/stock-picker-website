@@ -1,0 +1,62 @@
+{
+  "update_time": "2026-05-29 06:07:12",
+  "trade_date": "20260528",
+  "sectors": [
+    {
+      "rank": 1,
+      "name": "华为概念",
+      "up_nums": 24,
+      "pct_chg": 1.13,
+      "days": 17,
+      "cons_nums": 10,
+      "score": 73.38,
+      "is_hot": true,
+      "up_stat": "9天5板"
+    },
+    {
+      "rank": 2,
+      "name": "新能源汽车",
+      "up_nums": 31,
+      "pct_chg": 1.28,
+      "days": 22,
+      "cons_nums": 6,
+      "score": 69.83,
+      "is_hot": true,
+      "up_stat": "9天5板"
+    },
+    {
+      "rank": 3,
+      "name": "机器人概念",
+      "up_nums": 18,
+      "pct_chg": 0.74,
+      "days": 16,
+      "cons_nums": 9,
+      "score": 67.23,
+      "is_hot": true,
+      "up_stat": "9天5板"
+    },
+    {
+      "rank": 4,
+      "name": "5G",
+      "up_nums": 18,
+      "pct_chg": 2.03,
+      "days": 5,
+      "cons_nums": 9,
+      "score": 61.09,
+      "is_hot": true,
+      "up_stat": "9天6板"
+    },
+    {
+      "rank": 5,
+      "name": "芯片概念",
+      "up_nums": 34,
+      "pct_chg": 2.1,
+      "days": 1,
+      "cons_nums": 10,
+      "score": 58.29,
+      "is_hot": false,
+      "up_stat": "6天5板"
+    }
+  ],
+  "message": "共找到20个热点板块，显示前5个"
+}

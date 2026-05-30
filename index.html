@@ -18,9 +18,105 @@
             padding: 20px;
         }
 
-        .container {
-            max-width: 600px;
+        .main-container {
+            display: flex;
+            gap: 20px;
+            max-width: 1200px;
             margin: 0 auto;
+        }
+
+        .sidebar {
+            width: 280px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+            position: sticky;
+            top: 20px;
+            height: fit-content;
+        }
+
+        .sidebar h3 {
+            font-size: 18px;
+            color: #333;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 12px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        #hot-sectors-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        #hot-sectors-list li {
+            padding: 12px 15px;
+            margin: 10px 0;
+            background: white;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-left: 4px solid #667eea;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        #hot-sectors-list li:hover {
+            transform: translateX(3px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        #hot-sectors-list li.hot {
+            border-left-color: #ff6b6b;
+            background: linear-gradient(90deg, #fff5f5, #fff);
+        }
+
+        .sector-name {
+            font-weight: 600;
+            color: #333;
+            font-size: 14px;
+        }
+
+        .sector-score {
+            font-size: 13px;
+            color: #667eea;
+            font-weight: 600;
+            background: rgba(102, 126, 234, 0.1);
+            padding: 4px 10px;
+            border-radius: 12px;
+        }
+
+        .sector-pct {
+            font-size: 12px;
+            color: #52c41a;
+            margin-top: 4px;
+        }
+
+        .hot-tag {
+            font-size: 10px;
+            background: #ff6b6b;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-left: 8px;
+        }
+
+        .update-time {
+            font-size: 12px;
+            color: #888;
+            text-align: center;
+            padding-top: 15px;
+            border-top: 1px dashed #ddd;
+            margin-top: 15px;
+        }
+
+        .container {
+            flex: 1;
+            min-width: 0;
         }
 
         .header {
@@ -292,23 +388,30 @@
             line-height: 1.6;
         }
 
-        @media (max-width: 480px) {
+        @media (max-width: 768px) {
+            .main-container {
+                flex-direction: column;
+            }
+            .sidebar {
+                width: 100%;
+                position: relative;
+                order: 2;
+            }
+            .container {
+                order: 1;
+            }
             body {
                 padding: 12px;
             }
-
             .card {
                 padding: 16px;
             }
-
             .header h1 {
                 font-size: 24px;
             }
-
             .stock-item {
                 padding: 12px;
             }
-
             .stock-name {
                 font-size: 16px;
             }
@@ -316,38 +419,50 @@
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>📈 智能选股器</h1>
-            <p>基于技术面 + 基本面的智能筛选</p>
+    <div class="main-container">
+        <!-- 左侧热点板块 -->
+        <div class="sidebar">
+            <h3>🔥 今日热点板块</h3>
+            <ul id="hot-sectors-list">
+                <li style="color:#999;">加载中...</li>
+            </ul>
+            <div class="update-time" id="hot-sectors-time"></div>
         </div>
 
-        <div class="card">
-            <button class="btn-primary" id="startBtn" onclick="startPicking()">
-                🚀 开始选股
-            </button>
+        <!-- 右侧主内容 -->
+        <div class="container">
+            <div class="header">
+                <h1>📈 智能选股器</h1>
+                <p>基于技术面 + 基本面的智能筛选</p>
+            </div>
 
-            <div class="error-msg" id="errorMsg"></div>
+            <div class="card">
+                <button class="btn-primary" id="startBtn" onclick="startPicking()">
+                    🚀 开始选股
+                </button>
 
-            <div class="progress-section" id="progressSection">
-                <div class="progress-text" id="progressText">正在连接服务器...</div>
-                <div class="progress-bar">
-                    <div class="progress-fill" id="progressFill"></div>
+                <div class="error-msg" id="errorMsg"></div>
+
+                <div class="progress-section" id="progressSection">
+                    <div class="progress-text" id="progressText">正在连接服务器...</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
                 </div>
+
+                <div class="stock-list" id="stockList"></div>
             </div>
 
-            <div class="stock-list" id="stockList"></div>
-        </div>
-
-        <div class="card history-section">
-            <div class="history-header">
-                <div class="history-title">📋 历史记录</div>
-                <button class="btn-clear" onclick="clearHistory()">清空记录</button>
-            </div>
-            <div class="history-list" id="historyList">
-                <div class="empty-state" id="emptyHistory">
-                    <div class="empty-state-icon">📭</div>
-                    <div>暂无选股记录</div>
+            <div class="card history-section">
+                <div class="history-header">
+                    <div class="history-title">📋 历史记录</div>
+                    <button class="btn-clear" onclick="clearHistory()">清空记录</button>
+                </div>
+                <div class="history-list" id="historyList">
+                    <div class="empty-state" id="emptyHistory">
+                        <div class="empty-state-icon">📭</div>
+                        <div>暂无选股记录</div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -360,38 +475,66 @@
     </div>
 
     <script>
-        const API_BASE = 'http://localhost:5000';
         let pollInterval = null;
 
+        // 加载热点板块
+        async function loadHotSectors() {
+            try {
+                const response = await fetch('data/hot_sectors.json');
+                const data = await response.json();
+                
+                const list = document.getElementById('hot-sectors-list');
+                const time = document.getElementById('hot-sectors-time');
+                
+                list.innerHTML = '';
+                
+                if (data.sectors && data.sectors.length > 0) {
+                    data.sectors.forEach(sector => {
+                        const li = document.createElement('li');
+                        li.className = sector.is_hot ? 'hot' : '';
+                        
+                        const nameSpan = document.createElement('span');
+                        nameSpan.className = 'sector-name';
+                        nameSpan.innerHTML = `${sector.rank}. ${sector.name}`;
+                        if (sector.is_hot) {
+                            nameSpan.innerHTML += '<span class="hot-tag">持续热点</span>';
+                        }
+                        
+                        const scoreSpan = document.createElement('span');
+                        scoreSpan.className = 'sector-score';
+                        scoreSpan.textContent = `${sector.score}`;
+                        
+                        li.appendChild(nameSpan);
+                        li.appendChild(scoreSpan);
+                        
+                        li.title = `涨停: ${sector.up_nums}家 | 涨幅: ${sector.pct_chg}% | 持续: ${sector.days}天`;
+                        list.appendChild(li);
+                    });
+                } else {
+                    list.innerHTML = '<li style="color:#999;">暂无热点数据</li>';
+                }
+                
+                time.textContent = `更新时间: ${data.update_time || '-'}`;
+                
+            } catch (error) {
+                console.error('加载热点板块失败:', error);
+                document.getElementById('hot-sectors-list').innerHTML = '<li style="color:#999;">加载失败</li>';
+            }
+        }
+
+        // 页面加载时自动加载策略数据
+        async function loadStrategyData() {
+            try {
+                const response = await fetch('data/strategy1.json');
+                const data = await response.json();
+                displayResults(data);
+            } catch (error) {
+                console.error('加载策略数据失败:', error);
+            }
+        }
+
         function startPicking() {
-            const btn = document.getElementById('startBtn');
-            const progressSection = document.getElementById('progressSection');
-            const stockList = document.getElementById('stockList');
-            const errorMsg = document.getElementById('errorMsg');
-
-            btn.disabled = true;
-            btn.textContent = '⏳ 选股中...';
-            progressSection.classList.add('active');
-            stockList.classList.remove('active');
-            errorMsg.classList.remove('active');
-            stockList.innerHTML = '';
-            document.getElementById('progressFill').style.width = '0%';
-            document.getElementById('progressText').textContent = '正在连接服务器...';
-
-            fetch(`${API_BASE}/pick`)
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success && data.task_id) {
-                        pollProgress(data.task_id);
-                    } else {
-                        showError('任务启动失败');
-                        resetButton();
-                    }
-                })
-                .catch(err => {
-                    showError('无法连接到服务器，请确保 Flask 服务已启动');
-                    resetButton();
-                });
+            loadStrategyData();
         }
 
         function pollProgress(taskId) {
@@ -414,7 +557,7 @@
                         const prog = task.progress;
 
                         if (prog.status === 'processing' || prog.status === 'loading') {
-                            progress = Math.min(progress + Math.random() * 15, 95);
+                            progress = prog.progress || progress;
                             progressFill.style.width = `${progress}%`;
                             progressText.textContent = prog.message || '正在分析股票...';
                         } else if (prog.status === 'completed') {
@@ -558,6 +701,8 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             renderHistory();
+            loadHotSectors();
+            loadStrategyData();
         });
     </script>
 </body>
