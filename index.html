@@ -476,8 +476,125 @@
 
     <script>
         let pollInterval = null;
+        const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+            ? 'http://localhost:5000'
+            : 'https://stock-picker-api.onrender.com';
 
-        // 加载热点板块
+        async function callHistoryAPI(endpoint, method = 'GET', body = null) {
+            try {
+                const options = { method, headers: { 'Content-Type': 'application/json' } };
+                if (body) options.body = JSON.stringify(body);
+                const response = await fetch(`${API_BASE}/api/history${endpoint}`, options);
+                return await response.json();
+            } catch (error) {
+                console.warn('API调用失败，将使用本地存储:', error);
+                return null;
+            }
+        }
+
+        async function saveToHistory(result, strategyName = '均线突破策略') {
+            if (!result || !result.stocks || result.stocks.length === 0) return;
+
+            const stocks = result.stocks.slice(0, 5).map(s => ({
+                code: s['代码'] || '',
+                name: s['名称'] || '',
+                industry: s['行业'] || '',
+                score: s['得分'] || 0,
+                price: s['最新价'] || 0,
+                tags: s['标签'] || s['景气标签'] || ''
+            }));
+
+            const apiResult = await callHistoryAPI('', 'POST', { strategy: strategyName, stocks });
+
+            const localHistory = JSON.parse(localStorage.getItem('stockPickerHistory') || '[]');
+            const record = {
+                time: new Date().toLocaleString('zh-CN'),
+                stocks: result.stocks.slice(0, 5)
+            };
+            localHistory.unshift(record);
+            if (localHistory.length > 20) localHistory.pop();
+            localStorage.setItem('stockPickerHistory', JSON.stringify(localHistory));
+
+            renderHistory();
+        }
+
+        async function renderHistory() {
+            const historyList = document.getElementById('historyList');
+            const emptyHistory = document.getElementById('emptyHistory');
+
+            const apiResult = await callHistoryAPI('', 'GET');
+            let history = [];
+
+            if (apiResult && apiResult.success && apiResult.history) {
+                history = apiResult.history.map(h => ({
+                    time: new Date(h.time).toLocaleString('zh-CN'),
+                    stocks: h.stocks.map(s => ({
+                        '代码': s.code,
+                        '名称': s.name,
+                        '行业': s.industry,
+                        '得分': s.score,
+                        '最新价': s.price,
+                        '标签': s.tags
+                    }))
+                }));
+            }
+
+            const localHistory = JSON.parse(localStorage.getItem('stockPickerHistory') || '[]');
+            if (history.length === 0 && localHistory.length > 0) {
+                history = localHistory;
+            } else if (history.length > 0 && localHistory.length > 0) {
+                const localIds = localHistory.map(h => h.time);
+                localHistory.forEach(h => {
+                    if (!localIds.includes(h.time)) {
+                        history.push(h);
+                    }
+                });
+                history.sort((a, b) => new Date(b.time) - new Date(a.time));
+                history = history.slice(0, 20);
+            }
+
+            if (history.length === 0) {
+                emptyHistory.style.display = 'block';
+                historyList.innerHTML = '';
+                historyList.appendChild(emptyHistory);
+                return;
+            }
+
+            emptyHistory.style.display = 'none';
+
+            let html = '';
+            history.forEach((record, index) => {
+                let stocksHtml = '';
+                record.stocks.forEach(stock => {
+                    stocksHtml += `
+                        <div class="history-stock">
+                            <div class="history-stock-name">${stock['名称'] || stock.name || '-'}</div>
+                            <div class="history-stock-info">
+                                <div class="history-stock-code">${stock['代码'] || stock.code || '-'}</div>
+                                <div class="history-stock-score">${stock['得分'] || stock.score || 0}分</div>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                html += `
+                    <div class="history-item">
+                        <div class="history-time">🕐 ${record.time}</div>
+                        <div class="history-stocks">${stocksHtml}</div>
+                    </div>
+                `;
+            });
+
+            historyList.innerHTML = html;
+        }
+
+        async function clearHistory() {
+            if (confirm('确定要清空所有历史记录吗？')) {
+                await callHistoryAPI('/clear', 'POST');
+                localStorage.removeItem('stockPickerHistory');
+                renderHistory();
+            }
+        }
         async function loadHotSectors() {
             try {
                 const response = await fetch('data/hot_sectors.json');

@@ -29,7 +29,7 @@ jobs:
           sys.path.insert(0, '.')
           from stock_picker_tushare import run_picker
           import json
-          result = run_picker(max_results=10)
+          result = run_picker(max_results=5)
           with open('data/strategy1.json', 'w', encoding='utf-8') as f:
               json.dump(result, f, ensure_ascii=False, indent=2)
           print('策略一完成')
@@ -62,7 +62,7 @@ jobs:
                           results.append({'代码': stock['code'], '名称': stock['name'], '行业': stock['industry'], '得分': round(6 + (volumes[-1]/vol_ma20[-1]-1.5)*2, 1), '最新价': round(df['close'].values[-1], 2), '标签': '量能异动'})
               except:
                   pass
-          result = {'success': True, 'message': f'策略二：找到{len(results)}只', 'stocks': results[:10], 'update_time': datetime.now().isoformat()}
+          result = {'success': True, 'message': f'策略二：找到{len(results)}只', 'stocks': results[:5], 'update_time': datetime.now().isoformat()}
           with open('data/strategy2.json', 'w', encoding='utf-8') as f:
               json.dump(result, f, ensure_ascii=False, indent=2)
           "
@@ -96,7 +96,7 @@ jobs:
                           results.append({'代码': stock['code'], '名称': stock['name'], '行业': stock['industry'], '得分': round(score, 1), '最新价': round(price, 2), '标签': '价值投资'})
               except:
                   pass
-          result = {'success': True, 'message': f'策略三：找到{len(results)}只', 'stocks': results[:10], 'update_time': datetime.now().isoformat()}
+          result = {'success': True, 'message': f'策略三：找到{len(results)}只', 'stocks': results[:5], 'update_time': datetime.now().isoformat()}
           with open('data/strategy3.json', 'w', encoding='utf-8') as f:
               json.dump(result, f, ensure_ascii=False, indent=2)
           "
