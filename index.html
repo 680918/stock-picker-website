@@ -650,6 +650,62 @@
             }
         }
 
+        // 加载热点板块
+        async function loadHotSectors() {
+            try {
+                const response = await fetch('data/hot_sectors.json');
+                const data = await response.json();
+                
+                const list = document.getElementById('hot-sectors-list');
+                const time = document.getElementById('hot-sectors-time');
+                
+                list.innerHTML = '';
+                
+                if (data.sectors && data.sectors.length > 0) {
+                    data.sectors.forEach(sector => {
+                        const li = document.createElement('li');
+                        li.className = sector.is_hot ? 'hot' : '';
+                        
+                        const nameSpan = document.createElement('span');
+                        nameSpan.className = 'sector-name';
+                        nameSpan.innerHTML = `${sector.rank}. ${sector.name}`;
+                        if (sector.is_hot) {
+                            nameSpan.innerHTML += '<span class="hot-tag">持续热点</span>';
+                        }
+                        
+                        const scoreSpan = document.createElement('span');
+                        scoreSpan.className = 'sector-score';
+                        scoreSpan.textContent = `${sector.score}`;
+                        
+                        li.appendChild(nameSpan);
+                        li.appendChild(scoreSpan);
+                        
+                        li.title = `涨停: ${sector.up_nums}家 | 涨幅: ${sector.pct_chg}% | 持续: ${sector.days}天`;
+                        list.appendChild(li);
+                    });
+                } else {
+                    list.innerHTML = '<li style="color:#999;">暂无热点数据</li>';
+                }
+                
+                time.textContent = `更新时间: ${data.update_time || '-'}`;
+                
+            } catch (error) {
+                console.error('加载热点板块失败:', error);
+                document.getElementById('hot-sectors-list').innerHTML = '<li style="color:#999;">加载失败</li>';
+            }
+        }
+
+        // 页面加载时自动加载策略数据
+        async function loadStrategyData() {
+            try {
+                const response = await fetch('data/strategy1.json');
+                const data = await response.json();
+                displayResults(data);
+            } catch (error) {
+                console.error('加载策略数据失败:', error);
+            }
+        }
+
         function startPicking() {
             loadStrategyData();
         }
