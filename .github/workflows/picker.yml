@@ -1,0 +1,154 @@
+name: Stock Picker Automation
+
+on:
+  schedule:
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+jobs:
+  run-picker:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: pip install tushare pandas numpy
+
+      - name: Check Tushare token
+        run: |
+          if [ -z "$TUSHARE_TOKEN" ]; then
+            echo "TUSHARE_TOKEN is not set!"
+            exit 1
+          else
+            echo "TUSHARE_TOKEN is set successfully"
+          fi
+
+      - name: Run strategy 1
+        env:
+          TUSHARE_TOKEN: ${{ secrets.TUSHARE_TOKEN }}
+        run: |
+          python -c "
+          import sys
+          sys.path.insert(0, '.')
+          from stock_picker_tushare import run_picker
+          import json
+          result = run_picker(max_results=5)
+          print('策略一执行结果:', result)
+          print('成功:', result.get('success', False))
+          print('消息:', result.get('message', ''))
+          print('选股数量:', len(result.get('stocks', [])))
+          print('更新时间:', result.get('update_time', ''))
+          with open('data/strategy1.json', 'w', encoding='utf-8') as f:
+              json.dump(result, f, ensure_ascii=False, indent=2)
+          print('策略一完成')
+          "
+
+      - name: Run strategy 2
+        env:
+          TUSHARE_TOKEN: ${{ secrets.TUSHARE_TOKEN }}
+        run: |
+          python -c "
+          import tushare as ts
+          import pandas as pd
+          import json
+          from datetime import datetime
+          ts.set_token('${{ secrets.TUSHARE_TOKEN }}')
+          pro = ts.pro_api()
+          df = pro.stock_basic(exchange='', list_status='L', fields='ts_code,symbol,name,industry')
+          stocks = []
+          for _, row in df.iterrows():
+              if row['ts_code'].startswith(('6', '0', '3')) and 'ST' not in row['name']:
+                  stocks.append({'code': row['ts_code'], 'name': row['name'], 'industry': row.get('industry', '')})
+          results = []
+          for stock in stocks[:50]:
+              try:
+                  df = pro.daily(ts_code=stock['code'], start_date='20240101', end_date=datetime.now().strftime('%Y%m%d'), adj='qfq')
+                  if len(df) > 20:
+                      volumes = df['vol'].values
+                      vol_ma20 = pd.Series(volumes).rolling(20).mean().values
+                      if len(vol_ma20) > 0 and volumes[-1] > vol_ma20[-1] * 1.5:
+                          results.append({'代码': stock['code'], '名称': stock['name'], '行业': stock['industry'], '得分': round(6 + (volumes[-1]/vol_ma20[-1]-1.5)*2, 1), '最新价': round(df['close'].values[-1], 2), '标签': '量能异动'})
+              except:
+                  pass
+          result = {'success': True, 'message': f'策略二：找到{len(results)}只', 'stocks': results[:5], 'update_time': datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+          with open('data/strategy2.json', 'w', encoding='utf-8') as f:
+              json.dump(result, f, ensure_ascii=False, indent=2)
+          print('策略二完成')
+          print(f'选股数量: {len(results[:5])}')
+          "
+
+      - name: Run strategy 3
+        env:
+          TUSHARE_TOKEN: ${{ secrets.TUSHARE_TOKEN }}
+        run: |
+          python -c "
+          import tushare as ts
+          import json
+          from datetime import datetime
+          ts.set_token('${{ secrets.TUSHARE_TOKEN }}')
+          pro = ts.pro_api()
+          df = pro.stock_basic(exchange='', list_status='L', fields='ts_code,symbol,name,industry')
+          stocks = []
+          for _, row in df.iterrows():
+              if row['ts_code'].startswith(('6', '0', '3')) and 'ST' not in row['name']:
+                  stocks.append({'code': row['ts_code'], 'name': row['name'], 'industry': row.get('industry', '')})
+          results = []
+          for stock in stocks[:50]:
+              try:
+                  fina = pro.fina_indicator(ts_code=stock['code'], start_date='20250101')
+                  if len(fina) > 0:
+                      roe = fina.iloc[0].get('roe', 0)
+                      pe = fina.iloc[0].get('pe', 100)
+                      if roe > 8 and pe < 35:
+                          df = pro.daily(ts_code=stock['code'], start_date='20240101', end_date=datetime.now().strftime('%Y%m%d'), adj='qfq')
+                          price = df['close'].values[-1] if len(df) > 0 else 10
+                          score = 7 + (roe - 8) / 10 * 3
+                          results.append({'代码': stock['code'], '名称': stock['name'], '行业': stock['industry'], '得分': round(score, 1), '最新价': round(price, 2), '标签': '价值投资'})
+              except:
+                  pass
+          result = {'success': True, 'message': f'策略三：找到{len(results)}只', 'stocks': results[:5], 'update_time': datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+          with open('data/strategy3.json', 'w', encoding='utf-8') as f:
+              json.dump(result, f, ensure_ascii=False, indent=2)
+          print('策略三完成')
+          print(f'选股数量: {len(results[:5])}')
+          "
+
+      - name: Run hot sectors
+        env:
+          TUSHARE_TOKEN: ${{ secrets.TUSHARE_TOKEN }}
+        run: |
+          python hot_sectors.py
+          echo "热点板块生成完成"
+
+      - name: Verify data files
+        run: |
+          echo "=== 验证数据文件 ==="
+          echo "文件列表:"
+          ls -la data/
+          echo ""
+          echo "=== strategy1.json ==="
+          cat data/strategy1.json
+          echo ""
+          echo "=== 统计信息 ==="
+          python -c "import json; d=json.load(open('data/strategy1.json')); print(f'策略一: {len(d.get(\"stocks\", []))} 只, 成功: {d.get(\"success\")}, 消息: {d.get(\"message\", \"\")}')"
+          python -c "import json; d=json.load(open('data/strategy2.json')); print(f'策略二: {len(d.get(\"stocks\", []))} 只')"
+          python -c "import json; d=json.load(open('data/strategy3.json')); print(f'策略三: {len(d.get(\"stocks\", []))} 只')"
+          python -c "import json; d=json.load(open('data/hot_sectors.json')); print(f'热点板块: {len(d.get(\"sectors\", []))} 个')"
+
+      - name: Commit and push
+        run: |
+          git config user.email "action@github.com"
+          git config user.name "GitHub Action"
+          git add data/
+          # 强制提交，因为 update_time 总是会变化
+          git commit -m "Update stock data $(date -u)" || echo "没有变化"
+          git push
+          echo "数据已推送"
