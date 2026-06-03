@@ -35,6 +35,8 @@ jobs:
           with open('data/strategy1.json', 'w', encoding='utf-8') as f:
               json.dump(result, f, ensure_ascii=False, indent=2)
           print('策略一完成')
+          print(f'更新时间: {result.get(\"update_time\", \"\")}')
+          print(f'选股数量: {len(result.get(\"stocks\", []))}')
           "
 
       - name: Run strategy 2
@@ -67,6 +69,8 @@ jobs:
           result = {'success': True, 'message': f'策略二：找到{len(results)}只', 'stocks': results[:5], 'update_time': datetime.now().isoformat()}
           with open('data/strategy2.json', 'w', encoding='utf-8') as f:
               json.dump(result, f, ensure_ascii=False, indent=2)
+          print('策略二完成')
+          print(f'选股数量: {len(results[:5])}')
           "
 
       - name: Run strategy 3
@@ -101,6 +105,8 @@ jobs:
           result = {'success': True, 'message': f'策略三：找到{len(results)}只', 'stocks': results[:5], 'update_time': datetime.now().isoformat()}
           with open('data/strategy3.json', 'w', encoding='utf-8') as f:
               json.dump(result, f, ensure_ascii=False, indent=2)
+          print('策略三完成')
+          print(f'选股数量: {len(results[:5])}')
           "
 
       - name: Run hot sectors
@@ -108,6 +114,18 @@ jobs:
           TUSHARE_TOKEN: ${{ secrets.TUSHARE_TOKEN }}
         run: |
           python hot_sectors.py
+          echo "热点板块生成完成"
+
+      - name: Verify data files
+        run: |
+          echo "验证数据文件..."
+          echo "--- strategy1.json ---"
+          cat data/strategy1.json | head -20
+          echo ""
+          echo "--- 选股数量 ---"
+          python -c "import json; d=json.load(open('data/strategy1.json')); print(f'策略一: {len(d.get(\"stocks\", []))} 只')"
+          python -c "import json; d=json.load(open('data/strategy2.json')); print(f'策略二: {len(d.get(\"stocks\", []))} 只')"
+          python -c "import json; d=json.load(open('data/strategy3.json')); print(f'策略三: {len(d.get(\"stocks\", []))} 只')"
 
       - name: Commit and push
         run: |
