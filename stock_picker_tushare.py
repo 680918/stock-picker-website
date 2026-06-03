@@ -298,7 +298,9 @@ def run_picker(max_results=5, progress_callback=None):
     result = {
         'success': False,
         'stocks': [],
-        'message': ''
+        'message': '',
+        'update_time': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        'error_details': ''
     }
     
     try:
@@ -399,7 +401,8 @@ def run_picker(max_results=5, progress_callback=None):
                     break
                 time.sleep(0.5)
             except Exception as e:
-                pass
+                print(f'处理股票 {code} 时出错: {str(e)}')
+                continue
             
             time.sleep(0.05)
         
@@ -420,7 +423,12 @@ def run_picker(max_results=5, progress_callback=None):
             })
     
     except Exception as e:
+        import traceback
+        error_trace = traceback.format_exc()
         result['message'] = f'执行出错: {str(e)}'
+        result['error_details'] = error_trace
+        print(f'执行出错: {str(e)}')
+        print(error_trace)
         if progress_callback:
             progress_callback({'status': 'error', 'message': result['message']})
     
