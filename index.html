@@ -616,6 +616,7 @@
                 const response = await fetch(`data/strategy1.json?t=${timestamp}`);
                 const data = await response.json();
                 displayResults(data);
+                saveToHistory(data, '均线突破策略');
             } catch (error) {
                 console.error('加载策略数据失败:', error);
             }
