@@ -1,61 +1,61 @@
 {
-  "update_time": "2026-06-02 07:14:49",
-  "trade_date": "20260601",
+  "update_time": "2026-06-03 04:48:55",
+  "trade_date": "20260602",
   "sectors": [
     {
       "rank": 1,
-      "name": "华为概念",
-      "up_nums": 36,
-      "pct_chg": 0.91,
-      "days": 19,
-      "cons_nums": 6,
-      "score": 68.73,
+      "name": "新能源汽车",
+      "up_nums": 31,
+      "pct_chg": 0.23,
+      "days": 25,
+      "cons_nums": 10,
+      "score": 70.69,
       "is_hot": true,
-      "up_stat": "8天7板"
+      "up_stat": "6天5板"
     },
     {
       "rank": 2,
-      "name": "新能源汽车",
-      "up_nums": 22,
-      "pct_chg": 0.2,
-      "days": 24,
-      "cons_nums": 7,
-      "score": 67.59,
+      "name": "华为概念",
+      "up_nums": 25,
+      "pct_chg": -0.08,
+      "days": 20,
+      "cons_nums": 12,
+      "score": 70.0,
       "is_hot": true,
-      "up_stat": "5天4板"
+      "up_stat": "9天8板"
     },
     {
       "rank": 3,
       "name": "ST板块",
-      "up_nums": 46,
-      "pct_chg": 2.47,
+      "up_nums": 29,
+      "pct_chg": 0.85,
       "days": 1,
       "cons_nums": 19,
-      "score": 59.42,
+      "score": 54.54,
       "is_hot": false,
-      "up_stat": "8天7板"
+      "up_stat": "9天8板"
     },
     {
       "rank": 4,
-      "name": "储能",
-      "up_nums": 23,
-      "pct_chg": 0.61,
-      "days": 4,
-      "cons_nums": 9,
-      "score": 58.83,
-      "is_hot": true,
-      "up_stat": "6天6板"
+      "name": "芯片概念",
+      "up_nums": 27,
+      "pct_chg": 0.79,
+      "days": 1,
+      "cons_nums": 11,
+      "score": 54.36,
+      "is_hot": false,
+      "up_stat": "9天8板"
     },
     {
       "rank": 5,
-      "name": "西部大开发",
-      "up_nums": 18,
-      "pct_chg": 1.3,
-      "days": 6,
-      "cons_nums": 6,
-      "score": 57.9,
-      "is_hot": true,
-      "up_stat": "5天5板"
+      "name": "5G",
+      "up_nums": 21,
+      "pct_chg": 1.01,
+      "days": 1,
+      "cons_nums": 9,
+      "score": 54.03,
+      "is_hot": false,
+      "up_stat": "9天8板"
     }
   ],
   "message": "共找到20个热点板块，显示前5个"
