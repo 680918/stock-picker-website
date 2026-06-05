@@ -1,61 +1,61 @@
 {
-  "update_time": "2026-06-04 07:14:23",
-  "trade_date": "20260603",
+  "update_time": "2026-06-05 04:38:56",
+  "trade_date": "20260604",
   "sectors": [
     {
       "rank": 1,
       "name": "新能源汽车",
-      "up_nums": 18,
-      "pct_chg": -0.13,
-      "days": 26,
-      "cons_nums": 5,
-      "score": 61.0,
+      "up_nums": 27,
+      "pct_chg": -0.19,
+      "days": 27,
+      "cons_nums": 2,
+      "score": 62.0,
       "is_hot": true,
-      "up_stat": "2天2板"
+      "up_stat": "6天4板"
     },
     {
       "rank": 2,
-      "name": "光伏概念",
-      "up_nums": 19,
-      "pct_chg": 0.26,
-      "days": 6,
-      "cons_nums": 6,
-      "score": 56.79,
+      "name": "芯片概念",
+      "up_nums": 21,
+      "pct_chg": 0.57,
+      "days": 3,
+      "cons_nums": 4,
+      "score": 51.7,
       "is_hot": true,
-      "up_stat": "8天7板"
+      "up_stat": "9天6板"
     },
     {
       "rank": 3,
-      "name": "芯片概念",
-      "up_nums": 23,
-      "pct_chg": 1.21,
+      "name": "储能",
+      "up_nums": 25,
+      "pct_chg": -0.7,
       "days": 2,
-      "cons_nums": 3,
-      "score": 50.64,
+      "cons_nums": 6,
+      "score": 50.0,
       "is_hot": false,
-      "up_stat": "3天3板"
+      "up_stat": "9天5板"
     },
     {
       "rank": 4,
       "name": "机器人概念",
-      "up_nums": 19,
-      "pct_chg": -0.18,
-      "days": 3,
-      "cons_nums": 4,
-      "score": 48.0,
+      "up_nums": 17,
+      "pct_chg": -0.67,
+      "days": 4,
+      "cons_nums": 2,
+      "score": 44.0,
       "is_hot": true,
-      "up_stat": "3天3板"
+      "up_stat": "4天2板"
     },
     {
       "rank": 5,
-      "name": "华为概念",
-      "up_nums": 11,
-      "pct_chg": -0.29,
-      "days": 21,
-      "cons_nums": 6,
-      "score": 48.0,
-      "is_hot": true,
-      "up_stat": "6天4板"
+      "name": "锂电池概念",
+      "up_nums": 18,
+      "pct_chg": -0.8,
+      "days": 1,
+      "cons_nums": 3,
+      "score": 41.0,
+      "is_hot": false,
+      "up_stat": "8天6板"
     }
   ],
   "message": "共找到20个热点板块，显示前5个"
