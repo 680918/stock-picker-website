@@ -1,61 +1,61 @@
 {
-  "update_time": "2026-06-05 06:51:19",
-  "trade_date": "20260604",
+  "update_time": "2026-06-06 06:08:29",
+  "trade_date": "20260605",
   "sectors": [
     {
       "rank": 1,
       "name": "新能源汽车",
-      "up_nums": 27,
-      "pct_chg": -0.19,
-      "days": 27,
+      "up_nums": 19,
+      "pct_chg": 0.75,
+      "days": 28,
       "cons_nums": 2,
-      "score": 62.0,
-      "is_hot": true,
-      "up_stat": "6天4板"
-    },
-    {
-      "rank": 2,
-      "name": "芯片概念",
-      "up_nums": 21,
-      "pct_chg": 0.57,
-      "days": 3,
-      "cons_nums": 4,
-      "score": 51.7,
-      "is_hot": true,
-      "up_stat": "9天6板"
-    },
-    {
-      "rank": 3,
-      "name": "储能",
-      "up_nums": 25,
-      "pct_chg": -0.7,
-      "days": 2,
-      "cons_nums": 6,
-      "score": 50.0,
-      "is_hot": false,
-      "up_stat": "9天5板"
-    },
-    {
-      "rank": 4,
-      "name": "机器人概念",
-      "up_nums": 17,
-      "pct_chg": -0.67,
-      "days": 4,
-      "cons_nums": 2,
-      "score": 44.0,
+      "score": 62.26,
       "is_hot": true,
       "up_stat": "4天2板"
     },
     {
-      "rank": 5,
-      "name": "锂电池概念",
-      "up_nums": 18,
-      "pct_chg": -0.8,
-      "days": 1,
+      "rank": 2,
+      "name": "机器人概念",
+      "up_nums": 21,
+      "pct_chg": 1.03,
+      "days": 5,
+      "cons_nums": 5,
+      "score": 58.08,
+      "is_hot": true,
+      "up_stat": "5天3板"
+    },
+    {
+      "rank": 3,
+      "name": "专精特新",
+      "up_nums": 20,
+      "pct_chg": 1.16,
+      "days": 4,
+      "cons_nums": 2,
+      "score": 53.49,
+      "is_hot": true,
+      "up_stat": "4天2板"
+    },
+    {
+      "rank": 4,
+      "name": "芯片概念",
+      "up_nums": 17,
+      "pct_chg": -0.12,
+      "days": 4,
       "cons_nums": 3,
-      "score": 41.0,
-      "is_hot": false,
-      "up_stat": "8天6板"
+      "score": 45.0,
+      "is_hot": true,
+      "up_stat": "10天7板"
+    },
+    {
+      "rank": 5,
+      "name": "光伏概念",
+      "up_nums": 12,
+      "pct_chg": 0.13,
+      "days": 8,
+      "cons_nums": 2,
+      "score": 42.38,
+      "is_hot": true,
+      "up_stat": "4天4板"
     }
   ],
   "message": "共找到20个热点板块，显示前5个"
