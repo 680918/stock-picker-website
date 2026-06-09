@@ -1,61 +1,61 @@
 {
-  "update_time": "2026-06-08 07:06:13",
-  "trade_date": "20260605",
+  "update_time": "2026-06-09 06:29:03",
+  "trade_date": "20260608",
   "sectors": [
     {
       "rank": 1,
-      "name": "新能源汽车",
-      "up_nums": 19,
-      "pct_chg": 0.75,
-      "days": 28,
-      "cons_nums": 2,
-      "score": 62.26,
+      "name": "机器人概念",
+      "up_nums": 17,
+      "pct_chg": -2.16,
+      "days": 6,
+      "cons_nums": 6,
+      "score": 52.0,
       "is_hot": true,
-      "up_stat": "4天2板"
+      "up_stat": "6天4板"
     },
     {
       "rank": 2,
-      "name": "机器人概念",
-      "up_nums": 21,
-      "pct_chg": 1.03,
-      "days": 5,
-      "cons_nums": 5,
-      "score": 58.08,
+      "name": "光伏概念",
+      "up_nums": 11,
+      "pct_chg": -3.47,
+      "days": 9,
+      "cons_nums": 6,
+      "score": 46.0,
       "is_hot": true,
-      "up_stat": "5天3板"
+      "up_stat": "5天5板"
     },
     {
       "rank": 3,
-      "name": "专精特新",
-      "up_nums": 20,
-      "pct_chg": 1.16,
-      "days": 4,
-      "cons_nums": 2,
-      "score": 53.49,
+      "name": "华为概念",
+      "up_nums": 14,
+      "pct_chg": -2.88,
+      "days": 3,
+      "cons_nums": 3,
+      "score": 37.0,
       "is_hot": true,
-      "up_stat": "4天2板"
+      "up_stat": "5天5板"
     },
     {
       "rank": 4,
-      "name": "芯片概念",
-      "up_nums": 17,
-      "pct_chg": -0.12,
-      "days": 4,
-      "cons_nums": 3,
-      "score": 45.0,
-      "is_hot": true,
-      "up_stat": "10天7板"
+      "name": "人工智能",
+      "up_nums": 14,
+      "pct_chg": -2.35,
+      "days": 2,
+      "cons_nums": 4,
+      "score": 36.0,
+      "is_hot": false,
+      "up_stat": "5天5板"
     },
     {
       "rank": 5,
-      "name": "光伏概念",
-      "up_nums": 12,
-      "pct_chg": 0.13,
-      "days": 8,
+      "name": "芯片概念",
+      "up_nums": 11,
+      "pct_chg": -3.61,
+      "days": 5,
       "cons_nums": 2,
-      "score": 42.38,
+      "score": 34.0,
       "is_hot": true,
-      "up_stat": "4天4板"
+      "up_stat": "4天2板"
     }
   ],
   "message": "共找到20个热点板块，显示前5个"
